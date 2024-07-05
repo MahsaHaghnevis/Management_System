@@ -75,13 +75,13 @@ CREATE TABLE Catalog (
     country_origin VARCHAR(50) NOT NULL,
     weight NUMERIC NOT NULL,
     length NUMERIC NOT NULL,
-    description VARCHAR(255) NOT NULL,
+    description VARCHAR(255),
     product_maintenance_ID VARCHAR(50) UNIQUE NOT NULL,
     product_name VARCHAR(100) NOT NULL,
     TP_ID NUMERIC NOT NULL,
     registered_by_user_ID NUMERIC NOT NULL,
     ordered_by_user_ID NUMERIC,
-    image BLOB NOT NULL,
+    image BLOB,
     FOREIGN KEY (TP_ID) REFERENCES TPL(TP_ID) ON DELETE CASCADE ON UPDATE CASCADE,
     FOREIGN KEY (registered_by_user_ID) REFERENCES User(user_ID) ON DELETE CASCADE ON UPDATE CASCADE,
     FOREIGN KEY (ordered_by_user_ID) REFERENCES User(user_ID) ON DELETE CASCADE ON UPDATE CASCADE,
@@ -99,7 +99,7 @@ CREATE TABLE Orders (
     warehouse_ID NUMERIC NOT NULL,
     order_status VARCHAR(50) NOT NULL CHECK (order_status IN ('Processing', 'Preparation', 'In stock', 'Sent', 'Received', 'Returned')),
     order_type VARCHAR(50) NOT NULL CHECK (order_type IN ('Online', 'In person')),
-    user_notes VARCHAR(255) NOT NULL,
+    user_notes VARCHAR(255),
     is_gift BOOLEAN NOT NULL,
     FOREIGN KEY (TP_ID) REFERENCES TPL(TP_ID) ON DELETE CASCADE ON UPDATE CASCADE,
     FOREIGN KEY (order_user_ID) REFERENCES User(user_ID) ON DELETE CASCADE ON UPDATE CASCADE,
@@ -112,7 +112,7 @@ CREATE TABLE Location (
     has_container BOOLEAN NOT NULL,
     TP_ID NUMERIC NOT NULL,
     warehouse_ID NUMERIC NOT NULL,
-    notes VARCHAR(255) NOT NULL,
+    notes VARCHAR(255),
     latitude NUMERIC NOT NULL,
     longitude NUMERIC NOT NULL,
     registered_by_user_ID NUMERIC NOT NULL,
@@ -206,13 +206,13 @@ for i in range(1, 10001):
         random.choice(countries),
         round(random.uniform(1.0, 10.0), 2),
         round(random.uniform(1.0, 5.0), 2),
-        random_string(20),
+        random.choice([random_string(20), None]),
         product_maintenance_id,
         product_name,
         random.randint(1, 10000),
         random.randint(1, 10000),
         random.choice([random.randint(1, 10000), None]),
-        random_string(10)
+        random.choice([random_string(10), None])
     ))
 
 # Insert data into Orders
@@ -229,7 +229,7 @@ for i in range(1, 10001):
         random.randint(1, 10000),
         random.choice(order_status_list),  # Ensure order_status is one of the predefined values
         random.choice(order_type_list),    # Ensure order_type is one of the predefined values
-        random_string(50),
+        random.choice([random_string(50), None]),
         random.choice([True, False])
     ))
 
@@ -243,7 +243,7 @@ for i in range(1, 10001):
         random.choice([True, False]),
         random.randint(1, 10000),
         random.randint(1, 10000),
-        random_string(20),
+        random.choice([random_string(20), None]),
         round(random.uniform(-90.0, 90.0), 6),
         round(random.uniform(-180.0, 180.0), 6),
         random.randint(1, 10000)
