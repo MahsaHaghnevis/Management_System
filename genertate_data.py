@@ -81,7 +81,7 @@ CREATE TABLE Catalog (
     TP_ID NUMERIC NOT NULL,
     registered_by_user_ID NUMERIC NOT NULL,
     ordered_by_user_ID NUMERIC,
-    image BLOB NOT NULL,
+    image BLOB,
     FOREIGN KEY (TP_ID) REFERENCES TPL(TP_ID) ON DELETE CASCADE ON UPDATE CASCADE,
     FOREIGN KEY (registered_by_user_ID) REFERENCES User(user_ID) ON DELETE CASCADE ON UPDATE CASCADE,
     FOREIGN KEY (ordered_by_user_ID) REFERENCES User(user_ID) ON DELETE CASCADE ON UPDATE CASCADE,
@@ -212,7 +212,7 @@ for i in range(1, 10001):
         random.randint(1, 10000),
         random.randint(1, 10000),
         random.choice([random.randint(1, 10000), None]),
-        random_string(10)
+        random.choice([random_string(10), None])
     ))
 
 # Insert data into Orders
