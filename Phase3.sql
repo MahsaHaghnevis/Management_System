@@ -25,25 +25,31 @@ ORDER BY
 
 --query 14
 
-
 SELECT 
     P1.product_name AS Product1,
     P2.product_name AS Product2,
-    COUNT(*) AS PairCount
+    P3.product_name AS Product3,
+    COUNT(*) AS TripletCount
 FROM 
     OrdersCatalogJoin OCJ1
 JOIN 
     OrdersCatalogJoin OCJ2 ON OCJ1.order_ID = OCJ2.order_ID AND OCJ1.catalog_ID < OCJ2.catalog_ID
 JOIN 
+    OrdersCatalogJoin OCJ3 ON OCJ1.order_ID = OCJ3.order_ID AND OCJ2.catalog_ID < OCJ3.catalog_ID
+JOIN 
     Catalog P1 ON OCJ1.catalog_ID = P1.catalog_ID
 JOIN 
     Catalog P2 ON OCJ2.catalog_ID = P2.catalog_ID
+JOIN 
+    Catalog P3 ON OCJ3.catalog_ID = P3.catalog_ID
 GROUP BY 
     P1.product_name, 
-    P2.product_name
+    P2.product_name, 
+    P3.product_name
 ORDER BY 
-    PairCount DESC
+    TripletCount DESC
 LIMIT 3;
+
 
 --query 15
 
@@ -132,6 +138,9 @@ GROUP BY
 ORDER BY
     activity_percentage DESC;
 
+
+
+--not so sure on this one 
 --query 19
 SELECT
     TPL.TP_ID,
