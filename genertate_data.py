@@ -17,13 +17,13 @@ cursor = conn.cursor()
 cursor.execute('PRAGMA foreign_keys = ON;')
 
 # Drop tables if they exist (for testing purposes)
-cursor.execute('DROP TABLE IF EXISTS Orders')
-cursor.execute('DROP TABLE IF EXISTS Catalog')
-cursor.execute('DROP TABLE IF EXISTS Location')
-cursor.execute('DROP TABLE IF EXISTS Warehouse')
-cursor.execute('DROP TABLE IF EXISTS User')
-cursor.execute('DROP TABLE IF EXISTS TPL')
 cursor.execute('DROP TABLE IF EXISTS Country')
+cursor.execute('DROP TABLE IF EXISTS TPL')
+cursor.execute('DROP TABLE IF EXISTS User')
+cursor.execute('DROP TABLE IF EXISTS Warehouse')
+cursor.execute('DROP TABLE IF EXISTS Catalog')
+cursor.execute('DROP TABLE IF EXISTS Orders')
+cursor.execute('DROP TABLE IF EXISTS Location')
 cursor.execute('DROP TABLE IF EXISTS OrdersCatalogJoin')
 
 # Create tables
@@ -75,7 +75,7 @@ CREATE TABLE Catalog (
     country_origin VARCHAR(50) NOT NULL,
     weight NUMERIC NOT NULL,
     length NUMERIC NOT NULL,
-    description VARCHAR(255) NOT NULL,
+    description VARCHAR(255),
     product_maintenance_ID VARCHAR(50) UNIQUE NOT NULL,
     product_name VARCHAR(100) NOT NULL,
     TP_ID NUMERIC NOT NULL,
@@ -99,7 +99,7 @@ CREATE TABLE Orders (
     warehouse_ID NUMERIC NOT NULL,
     order_status VARCHAR(50) NOT NULL CHECK (order_status IN ('Processing', 'Preparation', 'In stock', 'Sent', 'Received', 'Returned')),
     order_type VARCHAR(50) NOT NULL CHECK (order_type IN ('Online', 'In person')),
-    user_notes VARCHAR(255) NOT NULL,
+    user_notes VARCHAR(255),
     is_gift BOOLEAN NOT NULL,
     FOREIGN KEY (TP_ID) REFERENCES TPL(TP_ID) ON DELETE CASCADE ON UPDATE CASCADE,
     FOREIGN KEY (order_user_ID) REFERENCES User(user_ID) ON DELETE CASCADE ON UPDATE CASCADE,
@@ -112,7 +112,7 @@ CREATE TABLE Location (
     has_container BOOLEAN NOT NULL,
     TP_ID NUMERIC NOT NULL,
     warehouse_ID NUMERIC NOT NULL,
-    notes VARCHAR(255) NOT NULL,
+    notes VARCHAR(255),
     latitude NUMERIC NOT NULL,
     longitude NUMERIC NOT NULL,
     registered_by_user_ID NUMERIC NOT NULL,
@@ -155,12 +155,10 @@ end_date = datetime(2024, 1, 1)
 for i in range(1, 10001):
     cursor.execute('INSERT INTO TPL (TP_ID, first_name, last_name) VALUES (?, ?, ?)', (i, random_string(5), random_string(7)))
 
+users = []
 # Insert data into User
 for i in range(1, 10001):
-    cursor.execute('''
-    INSERT INTO User (user_ID, first_name, last_name, Email, Password, Age, Type, TP_ID, phone_number) 
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ''', (
+    user_data = (
         i,
         random_string(5),
         random_string(7),
@@ -170,7 +168,12 @@ for i in range(1, 10001):
         random.choice(['simple', 'admin']),
         random.randint(1, 10000),
         random_phone()
-    ))
+    )
+    users.append(user_data)
+    cursor.execute('''
+    INSERT INTO User (user_ID, first_name, last_name, Email, Password, Age, Type, TP_ID, phone_number) 
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ''', user_data)
 
 # Insert data into Warehouse
 for i in range(1, 10001):
@@ -195,6 +198,9 @@ for i in range(1, 10001):
     manufacturing_cost = round(random.uniform(10.0, 100.0), 2)
     selling_price = round(random.uniform(manufacturing_cost + 1.0, 200.0), 2)  # Ensure selling_price is always greater than manufacturing_cost
 
+    user = random.choice(users)
+    user_id, _, _, _, _, _, _, tp_id, _ = user
+
     cursor.execute('''
     INSERT INTO Catalog (catalog_ID, product_type, manufacturing_cost, selling_price, country_origin, weight, length, description, product_maintenance_ID, product_name, TP_ID, registered_by_user_ID, ordered_by_user_ID, image)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -206,17 +212,19 @@ for i in range(1, 10001):
         random.choice(countries),
         round(random.uniform(1.0, 10.0), 2),
         round(random.uniform(1.0, 5.0), 2),
-        random_string(20),
+        random.choice([random_string(20), None]),
         product_maintenance_id,
         product_name,
+        tp_id,
         random.randint(1, 10000),
-        random.randint(1, 10000),
-        random.choice([random.randint(1, 10000), None]),
+        random.choice([user_id, None]),
         random.choice([random_string(10), None])
     ))
 
 # Insert data into Orders
 for i in range(1, 10001):
+    user = random.choice(users)
+    user_id, _, _, _, _, _, _, tp_id, _ = user
     cursor.execute('''
     INSERT INTO Orders (order_ID, order_date, Total_cost, TP_ID, order_user_ID, warehouse_ID, order_status, order_type, user_notes, is_gift)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -224,12 +232,12 @@ for i in range(1, 10001):
         i,  # Ensuring order_ID is unique and sequential
         random_date(start_date, end_date),
         round(random.uniform(50.0, 1000.0), 2),
-        random.randint(1, 10000),
-        random.randint(1, 10000),
+        tp_id,
+        user_id,
         random.randint(1, 10000),
         random.choice(order_status_list),  # Ensure order_status is one of the predefined values
         random.choice(order_type_list),    # Ensure order_type is one of the predefined values
-        random_string(50),
+        random.choice([random_string(50), None]),
         random.choice([True, False])
     ))
 
@@ -243,7 +251,7 @@ for i in range(1, 10001):
         random.choice([True, False]),
         random.randint(1, 10000),
         random.randint(1, 10000),
-        random_string(20),
+        random.choice([random_string(20), None]),
         round(random.uniform(-90.0, 90.0), 6),
         round(random.uniform(-180.0, 180.0), 6),
         random.randint(1, 10000)
