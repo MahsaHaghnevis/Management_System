@@ -165,5 +165,121 @@ ORDER BY
 
 
 --query 20
+WITH UserOrderCounts AS (
+    SELECT 
+        u.user_ID, 
+        u.first_name, 
+        u.last_name, 
+        COUNT(o.order_ID) AS num_purchases
+    FROM 
+        User u
+    JOIN 
+        Orders o ON u.user_ID = o.order_user_ID
+    GROUP BY 
+        u.user_ID, u.first_name, u.last_name
+)
+SELECT 
+    user_ID, 
+    first_name, 
+    last_name, 
+    num_purchases
+FROM 
+    UserOrderCounts
+WHERE num_purchases = (
+    SELECT 
+        MAX(num_purchases) AS max_purchases
+    FROM 
+        UserOrderCounts
+);
 
 
+--query 21
+SELECT 
+    w.country,
+    COUNT(o.order_ID) AS total_orders,
+    SUM(o.Total_cost) AS total_sales
+FROM 
+    Orders o
+JOIN 
+    Warehouse w ON o.warehouse_ID = w.warehouse_ID
+GROUP BY 
+    w.country
+ORDER BY 
+    total_sales DESC;
+
+
+--query 22
+WITH OrderProfits AS (
+    SELECT 
+        o.order_ID,
+        u.Age,
+        SUM(c.selling_price - c.manufacturing_cost) AS profit
+    FROM 
+        Orders o
+    JOIN 
+        User u ON o.order_user_ID = u.user_ID
+    JOIN 
+        Catalog c ON o.order_user_ID = c.ordered_by_user_ID
+    GROUP BY 
+        o.order_ID
+),
+AgeGroups AS (
+    SELECT 
+        CASE 
+            WHEN Age BETWEEN 0 AND 18 THEN '0-18'
+            WHEN Age BETWEEN 19 AND 30 THEN '19-30'
+            WHEN Age BETWEEN 31 AND 40 THEN '31-40'
+            WHEN Age BETWEEN 41 AND 50 THEN '41-50'
+            WHEN Age BETWEEN 51 AND 60 THEN '51-60'
+            ELSE '60+'
+        END AS age_group,
+        profit
+    FROM 
+        OrderProfits
+)
+SELECT 
+    age_group,
+    AVG(profit) AS average_profit
+FROM 
+    AgeGroups
+GROUP BY 
+    age_group
+ORDER BY 
+    age_group;
+
+
+--query 23
+WITH CustomerOrderCounts AS (
+    SELECT 
+        o.order_user_ID AS customer_ID,
+        c.TP_ID AS store_ID,
+        COUNT(o.order_ID) AS order_count
+    FROM 
+        Orders o,Catalog c
+    WHERE 
+        o.order_user_ID = c.ordered_by_user_ID AND o.TP_ID = c.TP_ID
+    GROUP BY 
+        o.order_user_ID, c.TP_ID
+),
+RepeatCustomers AS (
+    SELECT 
+        store_ID,
+        COUNT(*) AS repeat_customers
+    FROM 
+        CustomerOrderCounts
+    WHERE 
+        order_count > 1
+    GROUP BY 
+        store_ID
+)
+SELECT 
+    T.first_name,
+    T.last_name,
+    T.TP_ID,
+    rc.repeat_customers
+FROM 
+    RepeatCustomers rc
+JOIN 
+    TPL T ON rc.store_ID = T.TP_ID
+ORDER BY 
+    rc.repeat_customers DESC;
